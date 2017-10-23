@@ -4,7 +4,7 @@ mergesort.py
 author: Colin Clement
 date: 2017-10-23
 
-This follows Skiena section 4.5, implementing the heap sort
+This follows Skiena section 4.5
 
 Skiena has a nice C implementation which does almost all in-place 
 operations. I think I'll not bother trying to emulate that because in
