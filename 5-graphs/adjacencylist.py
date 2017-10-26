@@ -6,6 +6,7 @@ class Edgenode(object):
         self.w = 1
         self.nextedge = None
 
+
 class Graph(object):
     def __init__(self, nvertices, directed=False):
         self.nv = nvertices
@@ -14,6 +15,10 @@ class Graph(object):
 
         self.degrees = [0 for i in range(self.nv)]
         self.edges = [None for i in range(self.nv)]
+
+        self.process_early = lambda x: x
+        self.process_edge = lambda x, y: x
+        self.process_late = lambda x: x
 
     def insert(self, x, y, directed=False):
         p = Edgenode(y)
@@ -36,47 +41,60 @@ class Graph(object):
                     p = p.nextedge
                 print(edgestr)
                     
+    def bfs(self, s):
+        self._discovered = [False for i in range(self.nv)]
+        self._processed = [False for i in range(self.nv)]
+        parent = [None for i in range(self.nv)]
+    
+        self._discovered[s] = True
+        q = [s]
+        while q:
+            v = q.pop(0)  # fifo
+            self.process_early(v)
+            self._processed[v] = True
+    
+            p = self.edges[v]
+            while p:
+                y = p.y
+                if not self._processed[y] or self.directed:  # accurate edge count
+                    self.process_edge(v, y)
+                if not self._discovered[y]:
+                    q.append(y)
+                    self._discovered[y] = True
+                    parent[y] = v
+                p = p.nextedge
+            self.process_late(v)
+        return parent
+    
+    def findpath(self, start, end):
+        parents = self.bfs(start)  # must have start as root
+        if start == end or end is None:
+            return [start]
+        else:
+            endp = parents[end]
+            path = [endp, end]
+            while not endp == start:
+                endp = parents[endp]
+                path = [endp] + path
+            return path
 
-def bfs(g, s, process_early=None, process_edge=None, process_late=None):
-    process_early = process_early or (lambda x: x)
-    process_edge = process_edge or (lambda x, y: x)
-    process_late = process_late or (lambda x: x)
+    def connected_components(self):
+        components = []
+        def addcomponents(x, comp):
+            comp += [x]
+    
+        comp = []
+        self.process_early = lambda x: addcomponents(x, comp)
+        self.bfs(0)  # start search from arbitrary node
+        components += [comp]
 
-    discovered = [False for i in range(g.nv)]
-    processed = [False for i in range(g.nv)]
-    parent = [None for i in range(g.nv)]
-
-    discovered[s] = True
-    q = [s]
-    while q:
-        v = q.pop(0)  # fifo
-        process_early(v)
-        processed[v] = True
-
-        p = g.edges[v]
-        while p:
-            y = p.y
-            if not processed[y] or g.directed:  # accurate edge count
-                process_edge(v, y)
-            if not discovered[y]:
-                q.append(y)
-                discovered[y] = True
-                parent[y] = v
-            p = p.nextedge
-        process_late(v)
-    return parent
-
-def findpath(g, start, end):
-    parents = bfs(g, start)  # must have start as root
-    if start == end or end is None:
-        return [start]
-    else:
-        endp = parents[end]
-        path = [endp, end]
-        while not endp == start:
-            endp = parents[endp]
-            path = [endp] + path
-        return path
+        for i in range(self.nv):
+            if not self._discovered[i]:
+                comp = []
+                self.process_early = lambda x: addcomponents(x, comp)
+                self.bfs(i)
+                components += [comp]
+        return components
 
 
 if __name__=="__main__":
