@@ -69,9 +69,14 @@ def bfs(g, s, process_early=None, process_edge=None, process_late=None):
 def findpath(g, start, end):
     parents = bfs(g, start)  # must have start as root
     if start == end or end is None:
-        return start
+        return [start]
     else:
-        pass
+        endp = parents[end]
+        path = [endp, end]
+        while not endp == start:
+            endp = parents[endp]
+            path = [endp] + path
+        return path
 
 
 if __name__=="__main__":
