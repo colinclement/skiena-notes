@@ -16,7 +16,6 @@ class Edgenode(object):
         self.nextedge = None
 
 
-
 class Graph(object):
     def __init__(self, nvertices, directed=False):
         self.nv = nvertices
@@ -135,7 +134,7 @@ class Graph(object):
 
                     search(y)
 
-                elif not self._processed[y] or self.directed:
+                elif (not self._processed[y]) or self.directed:
                     self.process_edge(v, y)
                     if self._finished:
                         return
@@ -149,18 +148,15 @@ class Graph(object):
         search(s)
         return self._parent, self._entry, self._exit
 
-    def findcycle(self, x, y):
-        # STILL BROKE!
+    def findcycle(self, x):
         cycle = []
         def process_edge(x, y, path=cycle):
             """ Note the subtle conditionals for finding a back edge. """
-            print("Edge ({}, {})".format(x, y))
-            if self._parent[x] != y:  # Condition for a back edge!
-                print("{} is not the parent of {}".format(y, x))
-                print(self._parent)
-                path = self.findpath(y, x, self._parent, path)
-                print('path = {}'.format(path))
-                self._finished = True  # stop looking!
+            if self._parent[x] != y:
+                p = self.findpath(y, x, self._parent)
+                if p:
+                    self._finished = True  # stop looking!
+                    [path.append(i) for i in p]
 
         self.process_edge = process_edge
         self.dfs(x)
