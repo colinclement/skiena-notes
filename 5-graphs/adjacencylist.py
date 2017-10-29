@@ -25,6 +25,10 @@ class Graph(object):
         self.degrees = [0 for i in range(self.nv)]
         self.edges = [None for i in range(self.nv)]
 
+        self.reset()
+
+
+    def reset(self):
         self.process_early = lambda x: x
         self.process_edge = lambda x, y: x
         self.process_late = lambda x: x
@@ -90,14 +94,13 @@ class Graph(object):
         return self.findpath(start, end, parents)
         
     def connected_components(self):
-        components = []
         def addcomponents(x, comp):
             comp += [x]
     
         comp = []
         self.process_early = lambda x: addcomponents(x, comp)
         self.bfs(0)  # start search from arbitrary node
-        components += [comp]
+        components = [comp]
 
         for i in range(1, self.nv):  # already did 0
             if not self._discovered[i]:
@@ -106,7 +109,7 @@ class Graph(object):
                 self.bfs(i)
                 components += [comp]
 
-        self.process_early = lambda x: x  # reset process_early
+        self.reset()
         return components
 
     def dfs(self, s):
@@ -150,18 +153,80 @@ class Graph(object):
 
     def findcycle(self, x):
         cycle = []
+
         def process_edge(x, y, path=cycle):
-            """ Note the subtle conditionals for finding a back edge. """
+            """ Note the subtle conditional for finding a back edge. """
             if self._parent[x] != y:
                 p = self.findpath(y, x, self._parent)
-                if p:
+                if p:  # only quit if theres a path completing this back edge
                     self._finished = True  # stop looking!
                     [path.append(i) for i in p]
 
         self.process_edge = process_edge
         self.dfs(x)
-        self.process_edge = lambda x, y: x
+        self.reset()
         return cycle
+
+    def edge_classification(self, x, y):
+        if self._parent[y] == x:
+            return "TREE"
+        if self._discovered[y] and not self._processed[y]:
+            return "BACK"
+        if self._processed[y] and self._entry[y] > self._entry[x]:
+            return "FORWARD"
+        if self._processed[y] and self._entry[y] < self._entry[x]:
+            return "CROSS"
+
+    def findarticulations(self, x=1):
+        self._reachable_ancestor = [None for i in range(self.nv)]
+        self._tree_out_degree = [0 for i in range(self.nv)]
+
+        def process_early(v):
+            self._reachable_ancestor[v] = v
+
+        def process_edge(x, y):
+            cls = self.edge_classification(x, y)
+            if cls == "TREE":
+                self._tree_out_degree[x] += 1
+            if cls == "BACK" and self._parent[x] != y:
+                # If y is older than current ancestor of x, update
+                if self._entry[y] < self._entry[self._reachable_ancestor[x]]:
+                    self._reachable_ancestor[x] = y
+
+        articulations = []
+        def process_late(v, lst = articulations):
+            # Root cut
+            if self._parent[v] is None and self._tree_out_degree[v] > 1:
+                articulations.append(v)
+                return
+            # Parent cut
+            if self._reachable_ancestor[v] == self._parent[v]:
+                if not self._parent[self._parent[v]] is None:  # if parent not root
+                    articulations.append(v)
+            # Bridge cut
+            elif self._reachable_ancestor[v] == v:
+                if self._tree_out_degree[v] > 0:  # if v is not a leaf
+                    articulations.append(v)
+            entry_v = self._entry[self._reachable_ancestor[v]]
+            entry_vparent = self._entry[self._reachable_ancestor[self._parent[v]]]
+            if entry_v < entry_vparent:
+                p = self._parent[v]  # if anc[v] is younger than anc[parent[v]
+                self._reachable_ancestor[p] = self._reachable_ancestor[v]
+
+        self.process_early = process_early
+        self.process_edge = process_edge
+        self.process_late = process_late
+        self.dfs(x)
+        self.reset()
+        return articulations
+
+
+
+
+
+
+
+
 
 
 if __name__=="__main__":
