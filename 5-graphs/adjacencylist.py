@@ -113,7 +113,8 @@ class Graph(object):
         return components
 
     def dfs(self, s):
-        self._discovered = [False for i in range(self.nv)]
+        self._discovered = getattr(self, '_discovered', 
+                                   [False for i in range(self.nv)])
         self._processed = [False for i in range(self.nv)]
         self._parent = [None for i in range(self.nv)]
         self._entry = [None for i in range(self.nv)]
@@ -151,6 +152,23 @@ class Graph(object):
         search(s)
         return self._parent, self._entry, self._exit
 
+    def dfs_graph(self):
+        self._discovered = [False for i in range(self.nv)]
+        
+        def process_early(v, comp):
+            comp.append(v)
+
+        components = []
+        for i in range(self.nv):
+            if not self._discovered[i]:
+                comp = []
+                self.process_early = lambda x: process_early(x, comp)
+                self.dfs(i)
+                components.append(comp)
+        self.reset()
+        del self._discovered
+        return components
+
     def findcycle(self, x):
         cycle = []
 
@@ -176,6 +194,7 @@ class Graph(object):
             return "FORWARD"
         if self._processed[y] and self._entry[y] < self._entry[x]:
             return "CROSS"
+        print("Warning: unclassified edge ({}, {})".format(x, y))
 
     def findarticulations(self, x=1):
         self._reachable_ancestor = [None for i in range(self.nv)]
@@ -220,13 +239,25 @@ class Graph(object):
         self.reset()
         return articulations
 
+    def topsort(self):
+        assert self.directed, "Graph not directed, topological sort undefined"
+        topsorted = []
+        def process_late(v, lst=topsorted):
+            lst.insert(0, v)  # REVERSE processed order
+        self.process_late = process_late
 
-
-
-
-
-
-
+        def process_edge(x, y):
+            cls = self.edge_classification(x, y)
+            if cls == "BACK":
+                print("Warning: directed cycle found, graph not a DAG")
+        self._discovered = [False for i in range(self.nv)]
+        for i in range(self.nv):
+            if not self._discovered[i]:
+                self.dfs(i)
+        del self._discovered
+        self.reset()
+        return topsorted
+        
 
 
 if __name__=="__main__":
@@ -239,4 +270,15 @@ if __name__=="__main__":
     g.insert(3, 4)
     g.insert(4, 5)
     g.show()
+
+    dag = Graph(8, directed=True)
+    dag.insert(1, 2, True)
+    dag.insert(2, 3, True)
+    dag.insert(2, 4, True)
+    dag.insert(3, 5, True)
+    dag.insert(5, 4, True)
+    dag.insert(3, 6, True)
+    dag.insert(6, 5, True)
+    dag.insert(7, 1, True)
+    dag.insert(7, 6, True)
 
