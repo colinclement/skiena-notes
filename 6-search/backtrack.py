@@ -65,5 +65,8 @@ class Permutations(Backtrack):
         self.solutions.append(list(a[:k]))
 
     def construct_candidates(self, a, k, n):
-        print(a[:k], k, [i for i in range(n) if i not in a[:k]])
-        return [i for i in range(n) if i not in a[:k]]
+        return [i for i in range(n) if i not in a[:k - 1]]
+
+
+class Sudoku(Backtrack):
+    pass
