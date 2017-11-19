@@ -170,6 +170,42 @@ class LargestCommonSubsequence(EditDistance):
         return 3 * (not s == t)
 
 
+def reconstruct_partition(s, d, n, k, part):
+    if k == 1:
+        part.append(s[1:n+1])
+    else:
+        reconstruct_partition(s, d, d[n][k], k-1, part)
+        part.append(s[d[n][k]+1:n+1])
+
+def partition(s, k):
+    """ partition integer array into most equitable k-partitions """
+    s = [0] + s
+    tot = sum(s)
+    m = [[0 for j in range(k+1)] for i in range(len(s))]
+    d = [[-1 for j in range(k+1)] for i in range(len(s))]
+    for i in range(1,len(s)):
+        m[i][1] = m[i-1][1] + s[i]  # one range is simply sum
+    for j in range(1,k+1):
+        m[1][j] = s[1]  # one element has trivial cost
+
+    for i in range(2, len(s)):
+        for j in range(2, k+1):
+            m[i][j] = tot
+            for x in range(1, i):
+                cost = max(m[x][j-1], m[i][1] - m[x][1])
+                if m[i][j] > cost:
+                    m[i][j] = cost
+                    d[i][j] = x
+    part = []
+    reconstruct_partition(s, d, len(s)-1, k, part)
+    return part
+
+
+            
+
+
+
+
 
 
 
