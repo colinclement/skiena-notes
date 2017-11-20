@@ -12,7 +12,7 @@ algorithms as described in Skiena chapter 5
 class Edgenode(object):
     def __init__(self, y=None, w=1):
         self.y = None 
-        self.w = 1
+        self.w = w
         self.nextedge = None
 
 
@@ -21,6 +21,7 @@ class Graph(object):
         self.nv = nvertices
         self.ne = 0
         self.directed = directed
+        self.maxint = 9999999
 
         self.degrees = [0 for i in range(self.nv)]
         self.edges = [None for i in range(self.nv)]
@@ -33,14 +34,14 @@ class Graph(object):
         self.process_edge = lambda x, y: x
         self.process_late = lambda x: x
 
-    def insert(self, x, y, directed=False):
-        p = Edgenode(y)
+    def insert(self, x, y, w=1, directed=False):
+        p = Edgenode(y, w)
         p.y = y
         p.nextedge = self.edges[x]
         self.edges[x] = p
         self.degrees[x] += 1
         if not directed:
-            self.insert(y, x, True)
+            self.insert(y, x, w, True)
         else:
             self.ne += 1
 
@@ -257,6 +258,34 @@ class Graph(object):
         del self._discovered
         self.reset()
         return topsorted
+
+    def prim_mst(self, start=1):
+        intree = [False for i in range(self.nv)]
+        distance = [self.maxint for i in range(self.nv)]
+        parent = [-1 for i in range(self.nv)]
+
+        v = start
+        distance[v] = 0
+        while not intree[v]:
+            intree[v] = True
+            p = self.edges[v]
+            while p:
+                y = p.y
+                w = p.w
+                if distance[y] > w and not intree[y]: 
+                    distance[y] = w
+                    parent[y] = v
+                p = p.nextedge
+
+            v = 1
+            d = self.maxint
+            for i in range(self.nv):
+                if not intree[i] and distance[i] < d:
+                    d = distance[i]
+                    v = i
+
+        return parent
+
         
 
 
@@ -282,3 +311,16 @@ if __name__=="__main__":
     dag.insert(7, 1, True)
     dag.insert(7, 6, True)
 
+    wg = Graph(8)
+    wg.insert(1, 2, 5)
+    wg.insert(1, 3, 12)
+    wg.insert(1, 4, 7)
+    wg.insert(2, 4, 9)
+    wg.insert(4, 3, 4)
+    wg.insert(2, 5, 7)
+    wg.insert(4, 5, 4)
+    wg.insert(4, 6, 3)
+    wg.insert(3, 6, 7)
+    wg.insert(5, 6, 2)
+    wg.insert(5, 7, 5)
+    wg.insert(6, 7, 2)
